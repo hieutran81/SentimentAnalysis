@@ -4,9 +4,12 @@ from sklearn.svm import SVC
 from sklearn.ensemble import RandomForestClassifier
 from sklearn.neighbors import KNeighborsClassifier
 from sklearn.metrics import accuracy_score
-#from keras.layers import LSTM
-#from keras.layers import Dense
-#from keras.models import Sequential
+from keras.models import Sequential
+from keras.layers import Dense
+from keras.layers import Embedding
+from keras.layers import Flatten
+from keras.preprocessing import sequence
+from keras.layers import LSTM
 import fasttext as ft
 
 
@@ -47,25 +50,41 @@ def knn():
 #     #labels = ftmodel.predict(text)
 
 
+def convert_one_hot(y_train, y_test):
+    lab = np.amax(y_train)+1
+    train_enc = np.zeros((y_train.shape[0],lab))
+    train_enc[np.arange(y_train.shape[0]),y_train] = 1
+    test_enc = np.zeros((y_test.shape[0], lab))
+    test_enc[np.arange(y_test.shape[0]), y_test] = 1
+    print(train_enc)
+    print(train_enc.shape)
+    print(test_enc)
+    print(test_enc.shape)
+    return train_enc, test_enc
+
+
 def fit_lstm():
-    # design network
+    X_train = train_embed
+    y_train = np.array(train_labels)
+    X_test = test_embed
+    y_test = test_labels
+    X_train = sequence.pad_sequences(X_train, maxlen= max_words)
+    X_test  = sequence.pad_sequences(X_test, maxlen = max_words)
+    y_train, y_test = convert_one_hot(y_train, y_test)
+    # create the model
     model = Sequential()
-    model.add(LSTM(50, input_shape=(train_embed.shape[1])))
-    #model.add(SimpleRNN(50, input_shape=(train_X.shape[1], train_X.shape[2])))
+    model.add(LSTM(50, input_shape=(X_train.shape[1], X_train.shape[2])))
+    model.add(Dense(4, activation="softmax"))
+    model.compile(loss='categorical_crossentropy', optimizer='adam', metrics=['accuracy'])
+    print(model.summary())
+    model.fit(X_train, y_train, validation_data=(X_test, y_test), epochs= 50, batch_size= 32, verbose=2, shuffle=False)
+    score = model.evaluate(X_test, y_test, verbose = 0)
+    print("Accuracy : %.2f%%" %(score[1]*100))
 
-    model.add(Dense(1))
-    model.compile(loss='mae', optimizer='adam')
-    # fit network
-    history = model.fit(train_embed, train_labels, epochs=1, batch_size= 32, validation_data=(val_embed, val_labels), verbose=2,
-                        shuffle=False)
-    lstm_predicted = model.predict(test_embed)
-    print("lstm")
-    print(accuracy_score(test_labels, lstm_predicted))
-    return model, history
+max_words = 50
 
-
-train_embed, train_labels, test_embed, test_labels = FastText()
-naive_bayes()
+train_embed, train_labels, test_embed, test_labels = fasttext_lstm()
+fit_lstm()
 # random_forest()
 # svm()
 # knn()

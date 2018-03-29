@@ -140,12 +140,37 @@ def FastText():
 
     train_embed = np.array(train_embed)
     test_embed  = np.array(test_embed)
-    # ftpredicted = []
-    # for text in test_data:
-    #     lb = ftmodel.predict(text)
-    #     ftpredicted.append(int(lb[0][0]))
-    # print(accuracy_score(test_labels, ftpredicted))
-    #labels = ftmodel.predict(text)
+    return train_embed, train_labels, test_embed, test_labels
+
+def fasttext_lstm():
+    dimens = 100
+    #ftmodel = ft.supervised('data/trainprocess.txt', 'model/train', label_prefix='__label__')
+    #ftmodel = ft.load_model('model/model_sentiment.bin', encoding = 'utf-8', label_prefix='__label__')
+    ftmodel = ft.skipgram('data/trainprocess.txt', 'skip_gram', dim = dimens)
+    # print(len(ftmodel['langgg']))
+    # print(ftmodel.words)
+    train_embed = []
+    test_embed = []
+
+    for text in train_data:
+        tokens = nltk.word_tokenize(text)
+        embed = []
+        for token in tokens:
+            vec = ftmodel[token]
+            embed.append(vec)
+        train_embed.append(embed)
+        #print(embed)
+
+    for text in test_data:
+        tokens = nltk.word_tokenize(text)
+        embed = []
+        for token in tokens:
+            vec = ftmodel[token]
+            embed.append(vec)
+        test_embed.append(embed)
+
+    train_embed = np.array(train_embed)
+    test_embed  = np.array(test_embed)
     return train_embed, train_labels, test_embed, test_labels
 
 

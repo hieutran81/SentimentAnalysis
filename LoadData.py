@@ -10,7 +10,7 @@ def load_data(filename):
         seq = data[i][5:]
         # print(data[i])
         # print(i)
-        label = int(data[i][0])
+        label = int(data[i][0])-1
         texts.append(seq)
         labels.append(label)
     return texts, np.array(labels)

@@ -4,26 +4,62 @@ from sklearn.svm import SVC
 from sklearn.ensemble import RandomForestClassifier
 from sklearn.neighbors import KNeighborsClassifier
 from sklearn.metrics import accuracy_score
-from keras.models import Sequential
-from keras.layers import Dense
-from keras.layers import Embedding
-from keras.layers import Flatten
-from keras.preprocessing import sequence
-from keras.layers import LSTM
+from lime import lime_text
+from lime.lime_text import  LimeTextExplainer
+from sklearn.pipeline import make_pipeline
+# from keras.models import Sequential
+# from keras.layers import Dense
+# from keras.layers import Embedding
+# from keras.layers import Flatten
+# from keras.preprocessing import sequence
+# from keras.layers import LSTMtext
 import fasttext as ft
+import pickle
 
 
 def random_forest():
-    rfc = RandomForestClassifier(n_estimators= 100)
-    rfc = rfc.fit(train_embed, train_labels)
-    rfc_predicted = rfc.predict(test_embed)
-    print(accuracy_score(test_labels, rfc_predicted))
+    trees = [100,500, 1000, 3000, 5000, 10000]
+    for num in trees:
+        rfc = RandomForestClassifier(n_estimators= num)
+        print("start fit")
+        rfc = rfc.fit(train_embed, train_labels)
+        print("finish fit")
+        # with open("model/random_forest.pk","wb") as f:
+        #     pickle.dump(rfc,f)
+        # with open("model/vectorizer.pk","wb") as f:
+        #     pickle.dump(vectorizer,f)
+        print("finish dump")
+        rfc_predicted = rfc.predict(test_embed)
+        print(accuracy_score(test_labels, rfc_predicted))
+
+def explain_result():
+    class_names = ['positive', 'negative', 'neutral']
+    with open("model/random_forest.pk", "rb") as f:
+        rf = pickle.load(f)
+    c = make_pipeline(vectorizer, rf)
+
+    explainer = LimeTextExplainer(class_names=class_names)
+    text = "Không "
+    print(c.predict_proba([text]))
+    exp = explainer.explain_instance(text, c.predict_proba, num_features=6)
+    print(exp.as_list())
+
+
+def predict_sentiment(text):
+    with open("model/random_forest.pk", "rb") as f:
+        rfc = pickle.load(f)
+    with open("model/vectorizer.pk", "rb") as f:
+        vectorizer = pickle.load(f)
+    c = make_pipeline(vectorizer, rfc)
+    return rfc.predict(vectorizer.transform([text]))[0],c.predict_proba([text])
 
 def svm():
-    svc_clf = SVC()
-    svc_clf = svc_clf.fit(train_embed, train_labels)
-    svc_predicted = svc_clf.predict(test_embed)
-    print(accuracy_score(test_labels, svc_predicted))
+    cp = [1.0]
+    for c in cp:
+        svc_clf = SVC(C = c)
+        svc_clf = svc_clf.fit(train_embed, train_labels)
+        svc_predicted = svc_clf.predict(test_embed)
+        print(accuracy_score(test_labels, svc_predicted))
 
 def naive_bayes():
     clf = GaussianNB().fit(train_embed, train_labels)
@@ -81,12 +117,12 @@ def fit_lstm():
     score = model.evaluate(X_test, y_test, verbose = 0)
     print("Accuracy : %.2f%%" %(score[1]*100))
 
-max_words = 50
+max_words = 80
 
-train_embed, train_labels, test_embed, test_labels = fasttext_lstm()
-fit_lstm()
+# train_embed, train_labels, test_embed, test_labels = fasttext(maxwords = max_words)
+# # #explain_result()
 # random_forest()
-# svm()
-# knn()
-#FastText()
-#fit_lstm()
+# #svm()
+# # knn()
+# #FastText()
+# #fit_lstm()

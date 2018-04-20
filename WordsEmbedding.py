@@ -146,6 +146,8 @@ def fasttext(maxwords = 50):
     print(count)
     train_embed = np.array(train_embed)
     test_embed  = np.array(test_embed)
+    print(train_embed.shape)
+    print(test_embed.shape)
     return train_embed, train_labels, test_embed, test_labels
 
 def fasttext_lstm():
@@ -235,10 +237,99 @@ def fasttext_tfidf():
     return train_embed, train_labels, test_embed, test_labels
 
 
-def fasttext_pretrain():
+def fasttext_pretrain(maxwords):
     vi_model = KeyedVectors.load_word2vec_format('model/wiki.vi.vec')
     print(type(vi_model))
-    print(vi_model.most_similar('cha'))
+    print(vi_model.word_vec("thể").shape)
+    dimens = 300
+    train_embed = []
+    test_embed = []
+    count = 0
+    for text in train_data:
+        tokens = separate(text)
+        embed = []
+        for j in range(len(tokens)):
+            token = tokens[j]
+            if (j >= maxwords):
+                count = count + 1
+                break
+            vec = vi_model.word_vec(token)
+            for i in range(dimens):
+                embed.append(vec[i])
+        if (len(tokens) < maxwords):
+            for j in range(len(tokens), maxwords, 1):
+                for i in range(dimens):
+                    embed.append(0)
+        train_embed.append(embed)
+    print(count)
+    for text in test_data:
+        tokens = separate(text)
+        embed = []
+        for j in range(len(tokens)):
+            token = tokens[j]
+            if (j >= maxwords):
+                count = count + 1
+                break
+                vec = vi_model.word_vec(token)
+            for i in range(dimens):
+                embed.append(vec[i])
+        if (len(tokens) < maxwords):
+            for j in range(len(tokens), maxwords, 1):
+                for i in range(dimens):
+                    embed.append(0)
+        test_embed.append(embed)
+    print(count)
+    train_embed = np.array(train_embed)
+    test_embed = np.array(test_embed)
+    return train_embed, train_labels, test_embed, test_labels
+
+
+def fasttext_cnn(maxwords = 50, dimens = 50):
+    #ftmodel = ft.supervised('data/trainprocess.txt', 'model/train', label_prefix='__label__')
+    #ftmodel = ft.load_model('model/model_sentiment.bin', encoding = 'utf-8', label_prefix='__label__')
+    ftmodel = ft.skipgram('data/trainprocess.txt', 'skip_gram', dim = dimens)
+    # print(len(ftmodel['langgg']))
+    # print(ftmodel.words)
+    train_embed = []
+    test_embed = []
+    count = 0
+    for text in train_data:
+        tokens = separate(text)
+        embed = []
+        for j in range(len(tokens)):
+            token = tokens[j]
+            if (j >= maxwords):
+                count = count + 1
+                break
+            vec = ftmodel[token]
+            embed.append(vec)
+        if (len(tokens) < maxwords):
+            for j in range(len(tokens),maxwords,1):
+                embed.append([0] * dimens)
+        train_embed.append(embed)
+    print(count)
+    for text in test_data:
+        tokens = separate(text)
+        embed = []
+        for j in range(len(tokens)):
+            token = tokens[j]
+            if (j >= maxwords):
+                count = count + 1
+                break
+            vec = ftmodel[token]
+            embed.append(vec)
+        if (len(tokens) < maxwords):
+            for j in range(len(tokens), maxwords,1):
+                embed.append([0] * dimens)
+        test_embed.append(embed)
+    print(count)
+    train_embed = np.array(train_embed)
+    test_embed  = np.array(test_embed)
+    print(train_embed.shape)
+    print(test_embed.shape)
+    return train_embed, train_labels, test_embed, test_labels
+
+
 
 
 def merge(train_data, train_labels, val_data, val_label):
@@ -256,7 +347,7 @@ train_data, train_labels = convert_to_array("data/train.txt")
 test_data, test_labels = convert_to_array("data/test.txt")
 val_data, val_labels = convert_to_array("data/val.txt")
 train_data, train_labels = merge(train_data, train_labels, val_data, val_labels)
-fasttext_pretrain()
+# fasttext_cnn(60)
 #fasttext_tfidf()
 #FastText()
 #tf_idf()
